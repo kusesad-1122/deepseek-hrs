@@ -1,6 +1,8 @@
 #!/bin/bash
-# Build the arm64 rootfs (Ubuntu base + Node + dsh) on a x86_64 runner
-# using qemu-user-static. Output: app/src/main/assets/rootfs.tar.gz
+# Fast rootfs build: no qemu. Native deps use npm platform packages
+# (sharp/koffi ship linux-arm64 variants), so a plain x86_64 npm install
+# with --os=linux --cpu=arm64 produces a correct arm64 dependency tree.
+# Output: app/src/main/assets/rootfs.tar.gz
 set -euo pipefail
 
 UBUNTU_VER="24.04.4"
@@ -10,61 +12,45 @@ WEBAPP_VERSION="0.0.1-rc.1"
 WORK="$GITHUB_WORKSPACE"
 ROOTFS="$WORK/rootfs-build"
 
-sudo apt-get update -qq
-sudo apt-get install -y -qq qemu-user-static xz-utils
-
 mkdir -p "$ROOTFS"
 cd "$WORK"
 
-# 1. Ubuntu base rootfs
+# 1. Ubuntu base arm64 rootfs (never executed here, so no chroot needed)
 curl -sL -o ubuntu-base.tar.gz \
   "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-${UBUNTU_VER}-base-arm64.tar.gz"
-sudo tar -xzf ubuntu-base.tar.gz -C "$ROOTFS"
+tar -xzf ubuntu-base.tar.gz -C "$ROOTFS"
 
-# 2. qemu static binary so arm64 binaries run
-sudo cp /usr/bin/qemu-aarch64-static "$ROOTFS/usr/bin/"
-sudo cp /etc/resolv.conf "$ROOTFS/etc/resolv.conf"
-
-# 3. chroot mounts
-sudo mount -t proc /proc "$ROOTFS/proc" || true
-sudo mount --bind /sys "$ROOTFS/sys" || true
-sudo mount --bind /dev "$ROOTFS/dev" || true
-sudo mount --bind /dev/pts "$ROOTFS/dev/pts" || true
-trap 'sudo umount -l "$ROOTFS/dev/pts" "$ROOTFS/dev" "$ROOTFS/sys" "$ROOTFS/proc" 2>/dev/null || true' EXIT
-
-# 4. install basics in the arm64 rootfs
-sudo chroot "$ROOTFS" /bin/bash -lc '
-set -e
-export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq
-apt-get install -y -qq --no-install-recommends ca-certificates bash coreutils
-'
-
-# 5. Node.js official arm64 build
+# 2. Node.js official linux-arm64 build
 curl -sL -o node.tar.xz "https://nodejs.org/dist/${NODE_VER}/node-${NODE_VER}-linux-arm64.tar.xz"
-sudo mkdir -p "$ROOTFS/opt"
-sudo tar -xJf node.tar.xz -C "$ROOTFS/opt"
-sudo mv "$ROOTFS/opt/node-${NODE_VER}-linux-arm64" "$ROOTFS/opt/node"
+mkdir -p "$ROOTFS/opt"
+tar -xJf node.tar.xz -C "$ROOTFS/opt"
+mv "$ROOTFS/opt/node-${NODE_VER}-linux-arm64" "$ROOTFS/opt/node"
 
-# 6. npm install dsh inside the arm64 rootfs (qemu emulated, slow)
-sudo chroot "$ROOTFS" /bin/bash -lc '
-set -e
-export PATH=/opt/node/bin:$PATH HOME=/root
-export npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false
-mkdir -p /opt/dsh && cd /opt/dsh
+# 3. CA bundle (dsh calls DeepSeek API over HTTPS at runtime)
+curl -sL -o cacert.pem "https://curl.se/ca/cacert.pem"
+mkdir -p "$ROOTFS/etc/ssl/certs"
+cp cacert.pem "$ROOTFS/etc/ssl/certs/ca-certificates.crt"
+
+# 4. DNS (rootfs has no systemd-resolved; proot uses this file)
+printf 'nameserver 8.8.8.8\nnameserver 223.5.5.5\n' > "$ROOTFS/etc/resolv.conf"
+
+# 5. Cross-install dsh deps on the x86_64 runner (fast, ~5-10 min)
+mkdir -p /tmp/dshdeps && cd /tmp/dshdeps
 npm init -y >/dev/null 2>&1
-npm install --no-audit --no-fund --no-save \
-  @deepseek-ai/dsh@'"$DSH_VERSION"' \
-  @deepseek-ai/dsh-web-app@'"$WEBAPP_VERSION"' 2>&1 | tail -20
-'
+npm install --ignore-scripts --no-audit --no-fund --os=linux --cpu=arm64 \
+  "@deepseek-ai/dsh@${DSH_VERSION}" "@deepseek-ai/dsh-web-app@${WEBAPP_VERSION}" 2>&1 | tail -10
+
+# 6. Move node_modules into the rootfs
+mkdir -p "$ROOTFS/opt/dsh"
+cp -a /tmp/dshdeps/node_modules "$ROOTFS/opt/dsh/node_modules"
 
 # 7. dsh patch (disable node-pty chain) + entrypoint
-sudo mkdir -p "$ROOTFS/root/.dsh"
-sudo cp scripts/cordis.patch.yml "$ROOTFS/root/.dsh/cordis.patch.yml"
-sudo cp scripts/entrypoint.sh "$ROOTFS/opt/dsh/entry.sh"
-sudo chmod +x "$ROOTFS/opt/dsh/entry.sh"
+mkdir -p "$ROOTFS/root/.dsh"
+cp scripts/cordis.patch.yml "$ROOTFS/root/.dsh/cordis.patch.yml"
+cp scripts/entrypoint.sh "$ROOTFS/opt/dsh/entry.sh"
+chmod +x "$ROOTFS/opt/dsh/entry.sh"
 
-# 8. package
+# 8. Package
 mkdir -p app/src/main/assets
-sudo tar --owner=0 --group=0 -czf app/src/main/assets/rootfs.tar.gz -C "$ROOTFS" .
+tar --owner=0 --group=0 -czf app/src/main/assets/rootfs.tar.gz -C "$ROOTFS" .
 ls -la app/src/main/assets/rootfs.tar.gz
