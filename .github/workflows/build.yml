@@ -53,3 +53,13 @@ jobs:
           name: DeepSeek-HRS-apk
           path: app/build/outputs/apk/release/*.apk
           retention-days: 30
+
+      - name: Publish Release (anonymous download)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app/build/outputs/apk/release/*.apk
+          tag_name: v0.1.0
+          name: DeepSeek HRS v0.1.0
+          overwrite: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
