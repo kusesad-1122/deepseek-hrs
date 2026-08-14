@@ -1,0 +1,55 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Restore rootfs cache
+        id: rootfs-cache
+        uses: actions/cache@v4
+        with:
+          path: app/src/main/assets/rootfs.tar.gz
+          key: rootfs-v2-${{ hashFiles('scripts/build-rootfs.sh', 'scripts/cordis.patch.yml', 'scripts/entrypoint.sh') }}
+
+      - name: Build rootfs (qemu arm64 + npm install dsh)
+        if: steps.rootfs-cache.outputs.cache-hit != 'true'
+        run: bash scripts/build-rootfs.sh
+        timeout-minutes: 300
+
+      - name: Download and extract proot
+        run: |
+          curl -sL -o proot.deb https://packages.termux.dev/apt/termux-main/pool/main/p/proot/proot_5.1.107.90_aarch64.deb
+          ar x proot.deb data.tar.xz
+          tar -xJf data.tar.xz ./data/data/com.termux/files/usr/bin/proot
+          mkdir -p app/src/main/assets
+          mv data/data/com.termux/files/usr/bin/proot app/src/main/assets/proot
+          ls -la app/src/main/assets/
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build APK
+        run: gradle assembleRelease --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeepSeek-HRS-apk
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 30

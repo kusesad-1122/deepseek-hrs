@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">DeepSeek HRS</string>
+    <string name="preparing">正在准备运行环境（首次启动需要几分钟）…</string>
+    <string name="starting_dsh">正在启动 DeepSeek Harness…</string>
+    <string name="dsh_failed">启动超时或失败，请重试</string>
+    <string name="retry">重试</string>
+    <string name="notif_channel">DeepSeek HRS 服务</string>
+    <string name="notif_title">DeepSeek HRS 正在运行</string>
+</resources>
