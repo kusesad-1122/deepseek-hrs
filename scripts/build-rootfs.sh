@@ -34,11 +34,13 @@ cp cacert.pem "$ROOTFS/etc/ssl/certs/ca-certificates.crt"
 # 4. DNS (rootfs has no systemd-resolved; proot uses this file)
 printf 'nameserver 8.8.8.8\nnameserver 223.5.5.5\n' > "$ROOTFS/etc/resolv.conf"
 
-# 5. Cross-install dsh deps on the x86_64 runner (fast, ~5-10 min)
+# 5. Cross-install dsh deps on the x86_64 runner (fast, ~5-10 min).
+#    All @deepseek-ai packages are pinned to the version set verified on
+#    a real arm64 install (scripts/deps-lock.json), so half-published
+#    upstream releases cannot break the build.
 mkdir -p /tmp/dshdeps && cd /tmp/dshdeps
-npm init -y >/dev/null 2>&1
-npm install --ignore-scripts --no-audit --no-fund --os=linux --cpu=arm64 \
-  "@deepseek-ai/dsh@${DSH_VERSION}" "@deepseek-ai/dsh-web-app@${WEBAPP_VERSION}" 2>&1 | tail -10
+python3 "$WORK/scripts/gen-package-json.py" "$WORK/scripts/deps-lock.json" > package.json
+npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund --os=linux --cpu=arm64 2>&1 | tail -10
 
 # 6. Move node_modules into the rootfs
 mkdir -p "$ROOTFS/opt/dsh"
