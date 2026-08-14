@@ -45,6 +45,7 @@ npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund --os=linux 
 # 6. Move node_modules into the rootfs
 mkdir -p "$ROOTFS/opt/dsh"
 cp -a /tmp/dshdeps/node_modules "$ROOTFS/opt/dsh/node_modules"
+cd "$WORK"  # back to workspace for relative paths below
 
 # 7. dsh patch (disable node-pty chain) + entrypoint
 mkdir -p "$ROOTFS/root/.dsh"
