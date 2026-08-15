@@ -15,10 +15,19 @@ android {
         versionName = (project.findProperty("versionName") as? String) ?: "0.1.0"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = rootProject.file("keystore/hrs-release.jks")
+            storePassword = (project.findProperty("RELEASE_STORE_PASSWORD") as? String) ?: ""
+            keyAlias = (project.findProperty("RELEASE_KEY_ALIAS") as? String) ?: "hrs"
+            keyPassword = (project.findProperty("RELEASE_KEY_PASSWORD") as? String) ?: ""
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
