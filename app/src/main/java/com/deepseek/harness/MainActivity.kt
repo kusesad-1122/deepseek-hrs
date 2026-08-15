@@ -135,9 +135,10 @@ class MainActivity : AppCompatActivity() {
                 Log.d("WebErr", "onReceivedHttpError ${response?.statusCode} ${request?.url}")
             }
             override fun onPageFinished(view: WebView?, url: String?) {
-                view?.evaluateJavascript(
-                    "document.body.style.zoom = 0.85;", null
-                )
+                val js = "document.documentElement.style.zoom=0.8;document.body.style.zoom=0.8;"
+                view?.evaluateJavascript(js, null)
+                view?.postDelayed({ view.evaluateJavascript(js, null) }, 2000)
+                view?.postDelayed({ view.evaluateJavascript(js, null) }, 6000)
             }
         }
     }
