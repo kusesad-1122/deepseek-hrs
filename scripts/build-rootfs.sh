@@ -53,7 +53,8 @@ cp scripts/cordis.patch.yml "$ROOTFS/root/.dsh/cordis.patch.yml"
 cp scripts/entrypoint.sh "$ROOTFS/opt/dsh/entry.sh"
 chmod +x "$ROOTFS/opt/dsh/entry.sh"
 
-# 8. Package
-mkdir -p app/src/main/assets
-tar --owner=0 --group=0 -czf app/src/main/assets/rootfs.tar.gz -C "$ROOTFS" .
-ls -la app/src/main/assets/rootfs.tar.gz
+# 8. Package as a native lib (installed to nativeLibraryDir, readable as a
+#    plain file with extractNativeLibs=true)
+mkdir -p app/src/main/jniLibs/arm64-v8a
+tar --owner=0 --group=0 -cf app/src/main/jniLibs/arm64-v8a/librootfs.so -C "$ROOTFS" .
+ls -la app/src/main/jniLibs/arm64-v8a/librootfs.so

@@ -26,7 +26,7 @@ jobs:
         id: rootfs-cache
         uses: actions/cache@v4
         with:
-          path: app/src/main/assets/rootfs.tar.gz
+          path: app/src/main/jniLibs/arm64-v8a/librootfs.so
           key: rootfs-v2-${{ hashFiles('scripts/build-rootfs.sh', 'scripts/cordis.patch.yml', 'scripts/entrypoint.sh') }}
 
       - name: Build rootfs (qemu arm64 + npm install dsh)

@@ -55,7 +55,7 @@ class DshService : Service() {
         try {
             val filesDir = filesDir.absolutePath
             val rootfs = File(filesDir, "rootfs")
-            val prootBin = File(filesDir, "proot")
+            val prootBin = File(applicationInfo.nativeLibraryDir, "libproot.so")
             if (!prootBin.exists() || !rootfs.exists()) return
 
             val logFile = File(filesDir, "dsh.log")

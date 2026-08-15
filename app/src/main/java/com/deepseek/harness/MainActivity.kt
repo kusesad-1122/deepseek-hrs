@@ -79,37 +79,17 @@ class MainActivity : AppCompatActivity() {
         progress.visibility = android.view.View.VISIBLE
 
         val rootfsReady = File(filesDir, "rootfs/opt/dsh/entry.sh").exists()
-        val prootReady = File(filesDir, "proot").canExecute()
+        val prootReady = File(applicationInfo.nativeLibraryDir, "libproot.so").exists()
         if (!rootfsReady || !prootReady) {
             statusText.setText(R.string.preparing)
             thread {
-                var ok = true
-                if (!prootReady) ok = ensureProot()
-                if (ok && !rootfsReady) ok = RootfsExtractor.extract(this)
+                val ok = RootfsExtractor.extract(this)
                 handler.post {
                     if (ok) startDshAndWait() else showFailure()
                 }
             }
         } else {
             startDshAndWait()
-        }
-    }
-
-    private fun ensureProot(): Boolean {
-        return try {
-            val prootFile = File(filesDir, "proot")
-            if (!prootFile.exists()) {
-                assets.open("proot").use { input ->
-                    java.io.FileOutputStream(prootFile).use { output ->
-                        input.copyTo(output)
-                    }
-                }
-            }
-            prootFile.setExecutable(true, false)
-            prootFile.canExecute()
-        } catch (e: Throwable) {
-            e.printStackTrace()
-            false
         }
     }
 

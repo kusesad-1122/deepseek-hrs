@@ -11,25 +11,12 @@ object RootfsExtractor {
         return try {
             val destRoot = File(context.filesDir, "rootfs")
             destRoot.mkdirs()
-            var opened = false
-            // AGP strips .gz from compressed assets, so the bundled file is
-            // rootfs.tar; keep rootfs.tar.gz as fallback for other packagers.
-            for (assetName in listOf("rootfs.tar", "rootfs.tar.gz")) {
-                try {
-                    context.assets.open(assetName).use { input ->
-                        if (assetName.endsWith(".gz")) {
-                            GZIPInputStream(input).use { gz -> extractTar(gz, destRoot) }
-                        } else {
-                            extractTar(input, destRoot)
-                        }
-                    }
-                    opened = true
-                    break
-                } catch (_: java.io.FileNotFoundException) {
-                    // try next candidate
-                }
+            val tarFile = File(context.applicationInfo.nativeLibraryDir, "librootfs.so")
+            if (!tarFile.exists()) return false
+            java.io.FileInputStream(tarFile).use { input ->
+                extractTar(input, destRoot)
             }
-            opened
+            true
         } catch (e: Throwable) {
             e.printStackTrace()
             false
