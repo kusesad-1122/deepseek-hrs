@@ -78,7 +78,7 @@ class MainActivity : AppCompatActivity() {
         retryButton.isEnabled = false
         progress.visibility = android.view.View.VISIBLE
 
-        val rootfsReady = File(filesDir, "rootfs/opt/dsh/entry.sh").exists()
+        val rootfsReady = File(filesDir, "rootfs/opt/dsh/entry.sh").canExecute()
         val prootReady = File(applicationInfo.nativeLibraryDir, "libproot.so").exists()
         if (!rootfsReady || !prootReady) {
             statusText.setText(R.string.preparing)

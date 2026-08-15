@@ -88,6 +88,14 @@ object RootfsExtractor {
                         copyN(input, out, size)
                     }
                     totalBytes += size
+                    // restore exec bits: proot needs bash/env/node executable
+                    val modeStr = String(buf, 100, 8, Charsets.US_ASCII).trimEnd('\u0000'.code.toChar(), ' ')
+                    val mode = if (modeStr.isEmpty()) 0 else modeStr.toLong(8).toInt()
+                    if (mode and 0x1FF != 0) {
+                        try {
+                            android.system.Os.chmod(outFile.absolutePath, mode and 0x1FF)
+                        } catch (_: Throwable) {}
+                    }
                 }
                 else -> skipData(input, size)
             }
