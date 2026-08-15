@@ -47,7 +47,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build APK
-        run: gradle assembleRelease --no-daemon
+        run: gradle assembleRelease --no-daemon -PversionCode=${{ github.run_number }} -PversionName=0.1.${{ github.run_number }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -60,8 +60,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: app/build/outputs/apk/release/*.apk
-          tag_name: v0.1.0
-          name: DeepSeek HRS v0.1.0
-          overwrite: true
+          tag_name: v0.1.${{ github.run_number }}
+          name: DeepSeek HRS v0.1.${{ github.run_number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
