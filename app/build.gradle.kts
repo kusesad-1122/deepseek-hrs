@@ -11,8 +11,8 @@ android {
         applicationId = "com.deepseek.harness"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = (project.findProperty("versionCode") as? String)?.toIntOrNull() ?: 1
+        versionName = (project.findProperty("versionName") as? String) ?: "0.1.0"
     }
 
     buildTypes {
