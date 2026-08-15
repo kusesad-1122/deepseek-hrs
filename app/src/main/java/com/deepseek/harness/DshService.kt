@@ -69,7 +69,7 @@ class DshService : Service() {
                 "-b", "/proc",
                 "-b", "/sys",
                 "-b", "/storage/emulated/0:/sdcard",
-                "-w", "/root",
+                "-w", "/sdcard",
                 "--kill-on-exit",
                 "/bin/bash",
                 "/opt/dsh/entry.sh"
