@@ -59,6 +59,8 @@ class DshService : Service() {
             if (!prootBin.exists() || !rootfs.exists()) return
 
             val logFile = File(filesDir, "dsh.log")
+            val tmpDir = File(filesDir, "tmp")
+            tmpDir.mkdirs()
             val cmd = mutableListOf(
                 prootBin.absolutePath,
                 "-0",
@@ -81,6 +83,9 @@ class DshService : Service() {
             process = ProcessBuilder(cmd)
                 .redirectErrorStream(true)
                 .redirectOutput(logFile)
+                .apply {
+                    environment()["PROOT_TMP_DIR"] = tmpDir.absolutePath
+                }
                 .start()
         } catch (e: Throwable) {
             e.printStackTrace()
