@@ -9,6 +9,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -32,20 +34,11 @@ jobs:
         run: bash scripts/build-rootfs.sh
         timeout-minutes: 60
 
-      - name: Download and extract proot
-        run: |
-          curl -sL -o proot.deb https://packages.termux.dev/apt/termux-main/pool/main/p/proot/proot_5.1.107.90_aarch64.deb
-          ar x proot.deb data.tar.xz
-          tar -xJf data.tar.xz ./data/data/com.termux/files/usr/bin/proot
-          mkdir -p app/src/main/assets
-          mv data/data/com.termux/files/usr/bin/proot app/src/main/assets/proot
-          ls -la app/src/main/assets/
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build APK
-        run: gradle assembleRelease --no-daemon
+        run: gradle assembleRelease --no-daemon -PversionCode=${{ github.run_number }} -PversionName=0.1.${{ github.run_number }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -53,3 +46,12 @@ jobs:
           name: DeepSeek-HRS-apk
           path: app/build/outputs/apk/release/*.apk
           retention-days: 30
+
+      - name: Publish Release (anonymous download)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app/build/outputs/apk/release/*.apk
+          tag_name: v0.1.${{ github.run_number }}
+          name: DeepSeek HRS v0.1.${{ github.run_number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

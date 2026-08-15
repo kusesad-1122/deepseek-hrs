@@ -5,5 +5,4 @@ local.properties
 build/
 app/build/
 app/src/main/assets/rootfs.tar.gz
-app/src/main/assets/proot
 .DS_Store

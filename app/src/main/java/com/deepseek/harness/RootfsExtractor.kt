@@ -11,12 +11,25 @@ object RootfsExtractor {
         return try {
             val destRoot = File(context.filesDir, "rootfs")
             destRoot.mkdirs()
-            context.assets.open("rootfs.tar.gz").use { input ->
-                GZIPInputStream(input).use { gz ->
-                    extractTar(gz, destRoot)
+            var opened = false
+            // AGP strips .gz from compressed assets, so the bundled file is
+            // rootfs.tar; keep rootfs.tar.gz as fallback for other packagers.
+            for (assetName in listOf("rootfs.tar", "rootfs.tar.gz")) {
+                try {
+                    context.assets.open(assetName).use { input ->
+                        if (assetName.endsWith(".gz")) {
+                            GZIPInputStream(input).use { gz -> extractTar(gz, destRoot) }
+                        } else {
+                            extractTar(input, destRoot)
+                        }
+                    }
+                    opened = true
+                    break
+                } catch (_: java.io.FileNotFoundException) {
+                    // try next candidate
                 }
             }
-            true
+            opened
         } catch (e: Throwable) {
             e.printStackTrace()
             false
@@ -26,6 +39,7 @@ object RootfsExtractor {
     private fun extractTar(input: java.io.InputStream, destRoot: File) {
         val buf = ByteArray(512)
         var pendingName: String? = null
+        var pendingLink: String? = null
         var totalBytes = 0L
 
         while (true) {
@@ -50,6 +64,11 @@ object RootfsExtractor {
                     skipPadding(input, size)
                     continue
                 }
+                type == 'K' -> {
+                    pendingLink = readString(input, size)
+                    skipPadding(input, size)
+                    continue
+                }
                 type == 'x' || type == 'g' -> {
                     skipData(input, size)
                     continue
@@ -58,7 +77,9 @@ object RootfsExtractor {
                     File(destRoot, sanitize(name)).mkdirs()
                 }
                 isLink -> {
-                    val target = String(buf, 157, 100, Charsets.UTF_8).trimEnd('\u0000'.code.toChar(), ' ')
+                    val target0 = String(buf, 157, 100, Charsets.UTF_8).trimEnd('\u0000'.code.toChar(), ' ')
+                    val target = pendingLink ?: target0
+                    pendingLink = null
                     val link = File(destRoot, sanitize(pendingName ?: name))
                     link.parentFile?.mkdirs()
                     try {

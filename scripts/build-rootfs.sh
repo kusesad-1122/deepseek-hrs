@@ -40,7 +40,7 @@ printf 'nameserver 8.8.8.8\nnameserver 223.5.5.5\n' > "$ROOTFS/etc/resolv.conf"
 #    upstream releases cannot break the build.
 mkdir -p /tmp/dshdeps && cd /tmp/dshdeps
 python3 "$WORK/scripts/gen-package-json.py" "$WORK/scripts/deps-lock.json" > package.json
-npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund --os=linux --cpu=arm64 2>&1 | tail -10
+npm install --ignore-scripts --no-audit --no-fund --os=linux --cpu=arm64 2>&1 | tail -10
 
 # 6. Move node_modules into the rootfs
 mkdir -p "$ROOTFS/opt/dsh"
