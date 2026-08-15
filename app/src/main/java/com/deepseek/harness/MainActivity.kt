@@ -9,6 +9,11 @@ import android.os.Handler
 import android.os.Looper
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.util.Log
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.ProgressBar
@@ -67,9 +72,30 @@ class MainActivity : AppCompatActivity() {
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             cacheMode = WebSettings.LOAD_DEFAULT
         }
+        webView.setWebContentsDebuggingEnabled(true)
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(cm: ConsoleMessage): Boolean {
+                Log.d("WebConsole", "${cm.messageLevel()} ${cm.message()} @${cm.sourceId()}:${cm.lineNumber()}")
+                return true
+            }
+        }
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 return false
+            }
+            override fun onReceivedError(
+                view: WebView?,
+                request: android.webkit.WebResourceRequest?,
+                error: WebResourceError?
+            ) {
+                Log.d("WebErr", "onReceivedError ${error?.errorCode} ${error?.description} ${request?.url}")
+            }
+            override fun onReceivedHttpError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                response: android.webkit.WebResourceResponse?
+            ) {
+                Log.d("WebErr", "onReceivedHttpError ${response?.statusCode} ${request?.url}")
             }
         }
     }
