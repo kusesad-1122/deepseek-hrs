@@ -36,7 +36,7 @@ object RootfsExtractor {
             if (buf.all { it == 0.toByte() }) continue
 
             var name = String(buf, 0, 100, Charsets.UTF_8).trimEnd('\u0000'.code.toChar(), ' ')
-            val sizeStr = String(buf, 124, 12, Charsets.US_ASCII).trim()
+            val sizeStr = String(buf, 124, 12, Charsets.US_ASCII).trimEnd('\u0000'.code.toChar(), ' ')
             val size = if (sizeStr.isEmpty()) 0L else sizeStr.toLong(8)
             val type = buf[156].toInt().toChar()
 
