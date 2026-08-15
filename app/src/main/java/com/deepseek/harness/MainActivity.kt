@@ -87,8 +87,7 @@ class MainActivity : AppCompatActivity() {
         }
         if (Build.VERSION.SDK_INT >= 30) {
             try {
-                val env = android.os.Environment
-                if (!env.isExternalStorageManager()) {
+                if (!android.os.Environment.isExternalStorageManager()) {
                     val intent = Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
                     intent.data = android.net.Uri.parse("package:$packageName")
                     startActivity(intent)
