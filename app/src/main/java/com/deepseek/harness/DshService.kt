@@ -61,7 +61,7 @@ class DshService : Service() {
             val logFile = File(filesDir, "dsh.log")
             val tmpDir = File(filesDir, "tmp")
             tmpDir.mkdirs()
-            val cmd = mutableListOf(
+            val prootArgs = listOf(
                 prootBin.absolutePath,
                 "-0",
                 "-r", rootfs.absolutePath,
@@ -71,22 +71,27 @@ class DshService : Service() {
                 "-b", "/storage/emulated/0:/sdcard",
                 "-w", "/root",
                 "--kill-on-exit",
-                "/usr/bin/env",
-                "-i",
-                "HOME=/root",
-                "DSH_HOME=/root/.dsh",
-                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/node/bin",
-                "LANG=C.UTF-8",
                 "/bin/bash",
                 "/opt/dsh/entry.sh"
             )
-            process = ProcessBuilder(cmd)
-                .redirectErrorStream(true)
-                .redirectOutput(logFile)
-                .apply {
-                    environment()["PROOT_TMP_DIR"] = tmpDir.absolutePath
-                }
-                .start()
+            val envPrefix = "PROOT_TMP_DIR='${tmpDir.absolutePath}' PROOT_USE_LOADER=1 "
+            val suCmd = envPrefix + prootArgs.joinToString(" ") { "'" + it.replace("'", "'\\''") + "'" }
+            process = try {
+                // Preferred: run under KernelSU/Magisk root (no SELinux limits).
+                // User grants root when the app starts proot.
+                ProcessBuilder("su", "-mm", "-c", suCmd)
+                    .redirectErrorStream(true)
+                    .redirectOutput(logFile)
+                    .start()
+            } catch (e: Throwable) {
+                // Fallback: direct exec with proot userland loader.
+                val pb = ProcessBuilder(prootArgs)
+                    .redirectErrorStream(true)
+                    .redirectOutput(logFile)
+                pb.environment()["PROOT_TMP_DIR"] = tmpDir.absolutePath
+                pb.environment()["PROOT_USE_LOADER"] = "1"
+                pb.start()
+            }
         } catch (e: Throwable) {
             e.printStackTrace()
         }
