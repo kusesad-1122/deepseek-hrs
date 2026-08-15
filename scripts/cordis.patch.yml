@@ -1,5 +1,4 @@
-# node-pty has no prebuilt linux-arm64 binary usable here; disable the
-# shell/sandbox plugin chain that transitively requires it.
+# Only disable the node-pty dependency chain and its consumers.
 - id: subprocess
   name: '@deepseek-ai/dsh-subprocess-local'
   disabled: true
@@ -8,16 +7,4 @@
   disabled: true
 - id: permission
   name: '@deepseek-ai/dsh-permission-presets'
-  disabled: true
-- id: shell-env
-  name: '@deepseek-ai/dsh-shell-env'
-  disabled: true
-- id: sandbox
-  name: '@deepseek-ai/dsh-sandbox-local'
-  disabled: true
-- id: sandbox-policy
-  name: '@deepseek-ai/dsh-sandbox-policy'
-  disabled: true
-- id: fs-sandbox
-  name: '@deepseek-ai/dsh-fs-sandbox'
   disabled: true
