@@ -95,7 +95,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun startDshAndWait() {
         statusText.setText(R.string.starting_dsh)
-        if (!DshService.isRunning()) {
+        val alreadyUp = try {
+            val c = URL(DshService.URL).openConnection() as HttpURLConnection
+            c.connectTimeout = 1500
+            c.requestMethod = "GET"
+            c.responseCode == 200
+        } catch (_: Throwable) { false }
+        if (!alreadyUp && !DshService.isRunning()) {
             val intent = Intent(this, DshService::class.java)
             if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent)
             else startService(intent)
@@ -115,8 +121,7 @@ class MainActivity : AppCompatActivity() {
 
             handler.post {
                 if (ok) {
-                    progress.visibility = android.view.View.GONE
-                    statusText.text = ""
+                    findViewById<android.view.View>(R.id.overlay).visibility = android.view.View.GONE
                     webView.loadUrl(DshService.URL)
                 } else if (pollAttempts < 150) {
                     pollAttempts++
