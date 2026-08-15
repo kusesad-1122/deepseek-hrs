@@ -108,6 +108,7 @@ class MainActivity : AppCompatActivity() {
             loadWithOverviewMode = true
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             cacheMode = WebSettings.LOAD_DEFAULT
+            textZoom = 85
         }
         WebView.setWebContentsDebuggingEnabled(true)
         webView.webChromeClient = object : WebChromeClient() {
@@ -133,6 +134,11 @@ class MainActivity : AppCompatActivity() {
                 response: android.webkit.WebResourceResponse?
             ) {
                 Log.d("WebErr", "onReceivedHttpError ${response?.statusCode} ${request?.url}")
+            }
+            override fun onPageFinished(view: WebView?, url: String?) {
+                view?.evaluateJavascript(
+                    "document.body.style.zoom = 0.85;", null
+                )
             }
         }
     }
